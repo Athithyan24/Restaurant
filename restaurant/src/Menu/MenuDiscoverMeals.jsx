@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5000/api';
@@ -8,6 +8,11 @@ const MenuDiscoverMeals = () => {
   const [categories, setCategories] = useState(['All Collections']);
   const [activeTab, setActiveTab] = useState('All Collections');
   const [loading, setLoading] = useState(true);
+
+  // --- High-End Scroll Navigation States ---
+  const scrollContainerRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
 
   useEffect(() => {
     const fetchDatabaseMenu = async () => {
@@ -28,6 +33,31 @@ const MenuDiscoverMeals = () => {
     };
     fetchDatabaseMenu();
   }, []);
+
+  // Check scroll position to show/hide arrows dynamically
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(Math.ceil(scrollLeft) < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    handleScroll(); // Initial check
+    window.addEventListener('resize', handleScroll);
+    return () => window.removeEventListener('resize', handleScroll);
+  }, [categories]);
+
+  const scrollNav = (direction) => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 300; // Distance to move per click
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const displayedItems = activeTab === 'All Collections'
     ? menuItems
@@ -50,7 +80,7 @@ const MenuDiscoverMeals = () => {
           initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-yellow-500 uppercase tracking-[0.25em] text-xs font-serif font-bold mb-4"
+          className="text-yellow-500 uppercase tracking-[0.25em] text-xs font-clash font-bold mb-4"
         >
           This is what we serve you
         </motion.p>
@@ -60,31 +90,79 @@ const MenuDiscoverMeals = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.1 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-serif tracking-tight max-w-3xl leading-tight text-white font-medium"
+          className="text-3xl sm:text-4xl lg:text-5xl font-clash tracking-tight max-w-3xl leading-tight text-white font-medium"
         >
           Discover the perfect meal for every taste
         </motion.h2>
         <div className="w-12 h-[1px] bg-white/20 mt-6"></div>
       </div>
 
-      {/* 2. Flat Single Row Pill Bar System (Middle) */}
-      <div className="flex overflow-x-auto whitespace-nowrap justify-start sm:justify-center items-center gap-1 sm:gap-2 mb-16 sm:mb-20 bg-white/5 p-1.5 sm:p-2 rounded-full border border-white/10 max-w-fit mx-auto scrollbar-none" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        {categories.map((tab) => {
-          const isActive = activeTab === tab;
-          return (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`shrink-0 px-6 py-2.5 rounded-full font-serif text-xs uppercase tracking-widest font-bold transition-all duration-300 ${
-                isActive 
-                  ? 'bg-[#FFB000] text-black shadow-[0_4px_20px_rgba(255,176,0,0.25)]' 
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
+      {/* 2. Flat Single Row Pill Bar System (Middle) - UPGRADED SCROLL UI */}
+      <div className="relative w-full max-w-5xl mx-auto mb-16 sm:mb-20 group">
+        
+        {/* Left Arrow & Dark Fade Gradient */}
+        <AnimatePresence>
+          {canScrollLeft && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: -10 }}
+              className="absolute left-0 top-0 bottom-0 w-16 sm:w-24 bg-gradient-to-r from-[#060606] via-[#060606]/80 to-transparent z-10 flex items-center justify-start pointer-events-none"
             >
-              {tab}
-            </button>
-          );
-        })}
+              <button 
+                onClick={() => scrollNav('left')}
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1A1A1A] border border-white/10 flex items-center justify-center text-gray-400 hover:text-black hover:bg-[#FFB000] hover:border-[#FFB000] transition-all duration-300 pointer-events-auto shadow-[0_0_20px_rgba(0,0,0,0.8)] ml-0 sm:ml-2"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Dynamic Scrollable Pill Container */}
+        <div 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="flex overflow-x-auto whitespace-nowrap justify-start items-center gap-1 sm:gap-2 bg-white/5 p-1.5 sm:p-2 rounded-full border border-white/10 scrollbar-none scroll-smooth relative z-0 mx-auto max-w-fit w-full" 
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {categories.map((tab) => {
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`shrink-0 px-6 py-2.5 rounded-full font-serif text-xs uppercase tracking-widest font-bold transition-all duration-300 ${
+                  isActive 
+                    ? 'bg-[#FFB000] text-black shadow-[0_4px_20px_rgba(255,176,0,0.25)]' 
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right Arrow & Dark Fade Gradient */}
+        <AnimatePresence>
+          {canScrollRight && categories.length > 3 && (
+            <motion.div 
+              initial={{ opacity: 0, x: 10 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              exit={{ opacity: 0, x: 10 }}
+              className="absolute right-0 top-0 bottom-0 w-16 sm:w-24 bg-gradient-to-l from-[#060606] via-[#060606]/80 to-transparent z-10 flex items-center justify-end pointer-events-none"
+            >
+              <button 
+                onClick={() => scrollNav('right')}
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#1A1A1A] border border-white/10 flex items-center justify-center text-gray-400 hover:text-black hover:bg-[#FFB000] hover:border-[#FFB000] transition-all duration-300 pointer-events-auto shadow-[0_0_20px_rgba(0,0,0,0.8)] mr-0 sm:mr-2"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
       </div>
 
       {/* 3. 4-Column Minimal Vertical Stack Grid Layout (Bottom) */}
@@ -127,9 +205,9 @@ const MenuDiscoverMeals = () => {
                   {item.name}
                 </h3>
 
-                {/* LINE 3: Price Tag (Formatted at the bottom, no description) */}
+                {/* LINE 3: Price Tag */}
                 <p className="text-sm font-semibold font-sans text-[#FFB000] tracking-wider mt-1.5">
-                  {String(item.price).includes('₹') ? item.price : `₹${item.price}`}
+                  {String(item.price).includes('₹') || /[a-zA-Z]/.test(String(item.price)) ? item.price : `₹${item.price}`}
                 </p>
 
               </motion.div>
