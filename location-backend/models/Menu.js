@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 
+// NEW: Define the structure for an individual item inside a combo
+const ComboItemSchema = new mongoose.Schema({
+  name: { type: String, trim: true },
+  description: { type: String },
+  image: { type: String }
+});
+
 const MenuSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -10,13 +17,10 @@ const MenuSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please specify a category layout map']
   },
-  
-  // ⚠️ CRITICAL MODIFICATION: Changed from Number to String
   price: {
     type: String,
     required: [true, 'Please add an INR price point valuation or custom pricing note']
   },
-  
   description: {
     type: String,
     required: [true, 'Please add descriptive menu items notes']
@@ -30,6 +34,17 @@ const MenuSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  
+  // MODIFIED COMBO FIELDS
+  isCombo: {
+    type: Boolean,
+    default: false
+  },
+  comboItems: {
+    type: [ComboItemSchema], // Now uses the advanced object schema
+    default: []
+  },
+  
   isAvailable: {
     type: Boolean,
     default: true

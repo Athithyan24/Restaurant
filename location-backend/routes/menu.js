@@ -20,7 +20,8 @@ router.get('/', async (req, res) => {
 // @access  Private/Admin
 router.post('/', protect, authorize('admin'), async (req, res) => {
   try {
-    const { name, category, price, description, dietary, image } = req.body;
+    // ⚠️ Added isCombo and comboItems here
+    const { name, category, price, description, dietary, image, isCombo, comboItems } = req.body;
 
     const menuItem = await Menu.create({
       name,
@@ -28,7 +29,9 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
       price,
       description,
       dietary,
-      image
+      image,
+      isCombo,        // Save to DB
+      comboItems     // Save to DB
     });
 
     res.status(201).json({
@@ -48,11 +51,12 @@ router.post('/', protect, authorize('admin'), async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', protect, authorize('admin'), async (req, res) => {
   try {
-    const { name, category, price, description, dietary, image } = req.body;
+    // ⚠️ Added isCombo and comboItems here
+    const { name, category, price, description, dietary, image, isCombo, comboItems } = req.body;
 
     const updatedItem = await Menu.findByIdAndUpdate(
       req.params.id,
-      { name, category, price, description, dietary, image },
+      { name, category, price, description, dietary, image, isCombo, comboItems }, // Update in DB
       { new: true, runValidators: true } // 'new: true' returns the updated document
     );
 

@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Import Auth
 
 const Header = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Pull user context and logout function
+  const { user, logout } = useAuth();
 
   // Hide/Show Header on Scroll Mechanics
   useEffect(() => {
@@ -33,7 +38,8 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const navLinks = [
+  // DYNAMIC TAB ROUTING ENGINE
+  const publicLinks = [
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
     { name: 'Menu', path: '/menu' },
@@ -41,6 +47,21 @@ const Header = () => {
     { name: 'Blog', path: '/blog' },
     { name: 'Contact', path: '/contact' }
   ];
+
+  const adminLinks = [
+    { name: 'Dashboard', path: '/admin/dashboard' },
+    { name: 'Live Bookings', path: '/admin/bookings' },
+    { name: 'Promotions', path: '/admin/offers' }
+  ];
+
+  // Assign links based on active session role
+  const navLinks = user?.role === 'admin' ? adminLinks : publicLinks;
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+    setIsMobileMenuOpen(false);
+  };
 
   return (
     <>
@@ -54,7 +75,7 @@ const Header = () => {
           <div className="flex justify-between items-center h-20 sm:h-24">
             
             {/* BRAND LOGO SECTION */}
-            <Link to="/" className="flex items-center gap-3 sm:gap-4 group z-50 overflow-hidden py-2">
+            <Link to={user?.role === 'admin' ? "/admin/dashboard" : "/"} className="flex items-center gap-3 sm:gap-4 group z-50 overflow-hidden py-2">
               
               {/* Graphic Logo Image */}
               <img 
@@ -66,20 +87,18 @@ const Header = () => {
               {/* Stacked Proportional Typographic Block (Arabian Luxury Aesthetic) */}
               <div className="flex flex-col items-center justify-center select-none text-center">
                 {/* Row 1: LOCATION - Grand, elegant, spacious serif font */}
-                <span className="text-[19px] sm:text-[23px] font-serif text-white tracking-[0.28em] uppercase font-light leading-none mr-[-0.28em] group-hover:text-[#FFB000] transition-colors duration-300">
-                  Location
-                </span>
+                <img src="/logos.png" alt="Location" className="w-30 font-serif text-white tracking-[0.28em] uppercase font-light leading-none mr-[-0.28em] group-hover:text-[#FFB000] transition-colors duration-300" />
                 
                 {/* Ultra-thin elegant gold accent line defining the structural width of the logo */}
                 <div className="w-26.25 sm:w-32.5 h-px bg-linear-to-r from-transparent via-[#FFB000]/60 to-transparent my-1.5" />
                 
                 {/* Row 2: MULTI CUISINE - Refined, high-contrast crisp alignment */}
-                <span className="text-[11px] sm:text-[14px] font-sans text-[#FFB000] tracking-widest uppercase font-semibold leading-none mr-[-0.095em]">
+                <span className="text-[6px] sm:text-[9px] font-clash text-[#FFB000] tracking-widest uppercase font-bold leading-none mr-[-0.095em]">
                   Multi Cuisine
                 </span>
                 
                 {/* Row 3: RESTAURANT - Muted luxury gray completing the uniform block */}
-                <span className="text-[8.5px] sm:text-[10.5px] font-sans text-white tracking-[0.23em] uppercase font-light leading-none mt-1 mr-[-0.23em]">
+                <span className="text-[11px] sm:text-[11.5px] font-clash text-white tracking-[0.23em] uppercase font-bold leading-none mt-1 mr-[-0.23em]">
                   Restaurant
                 </span>
               </div>
@@ -113,15 +132,26 @@ const Header = () => {
 
             {/* ACTION BUTTON */}
             <div className="hidden md:flex items-center">
-              <Link to="/reserve">
+              {user ? (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="bg-[#FFB000] text-black px-7 py-3 rounded-full font-sans font-bold text-xs tracking-[0.2em] uppercase hover:bg-white transition-colors duration-300 shadow-[0_0_20px_rgba(255,176,0,0.2)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)]"
+                  onClick={handleLogout}
+                  className="bg-red-500/10 border border-red-500/50 text-red-400 px-7 py-3 rounded-full font-sans font-bold text-xs tracking-[0.2em] uppercase hover:bg-red-500 hover:text-white transition-colors duration-300 shadow-[0_0_20px_rgba(239,68,68,0.1)]"
                 >
-                  Book a Table
+                  Terminate Session
                 </motion.button>
-              </Link>
+              ) : (
+                <Link to="/reserve">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-[#FFB000] text-black px-7 py-3 rounded-full font-sans font-bold text-xs tracking-[0.2em] uppercase hover:bg-white transition-colors duration-300 shadow-[0_0_20px_rgba(255,176,0,0.2)] hover:shadow-[0_0_25px_rgba(255,255,255,0.3)]"
+                  >
+                    Book a Table
+                  </motion.button>
+                </Link>
+              )}
             </div>
 
             {/* MOBILE MENU TOGGLE BUTTON */}
@@ -190,11 +220,20 @@ const Header = () => {
                 transition={{ delay: 0.1 + navLinks.length * 0.05 }}
                 className="mt-8 w-full max-w-xs"
               >
-                <Link to="/reserve" onClick={() => setIsMobileMenuOpen(false)}>
-                  <button className="w-full bg-[#FFB000] text-black px-7 py-4 rounded-full font-sans font-bold text-sm tracking-[0.2em] uppercase active:scale-95 transition-transform">
-                    Book a Table
-                  </button>
-                </Link>
+                {user ? (
+                   <button 
+                     onClick={handleLogout} 
+                     className="w-full bg-red-500/10 border border-red-500/50 text-red-400 px-7 py-4 rounded-full font-sans font-bold text-sm tracking-[0.2em] uppercase active:scale-95 transition-transform"
+                   >
+                     Terminate Session
+                   </button>
+                ) : (
+                  <Link to="/reserve" onClick={() => setIsMobileMenuOpen(false)}>
+                    <button className="w-full bg-[#FFB000] text-black px-7 py-4 rounded-full font-sans font-bold text-sm tracking-[0.2em] uppercase active:scale-95 transition-transform">
+                      Book a Table
+                    </button>
+                  </Link>
+                )}
               </motion.div>
             </div>
           </motion.div>

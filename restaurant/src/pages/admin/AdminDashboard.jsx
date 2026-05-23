@@ -5,6 +5,7 @@ import AdminCategoryManager from './AdminCategoryManager';
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('menu'); // 'menu' or 'categories'
 
+
   return (
     <div className="min-h-screen bg-[#060606] text-white font-sans selection:bg-[#FFB000] selection:text-black">
       {/* Top Premium Navigation Header */}
@@ -51,17 +52,6 @@ const AdminDashboard = () => {
               Manage Categories
             </button>
           </div>
-
-          {/* Logout Action */}
-          {/* <button
-            onClick={handleLogout}
-            className="group flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-red-400 hover:text-red-300 border border-red-500/10 hover:border-red-500/30 px-5 py-3 rounded-xl transition-all duration-300 bg-red-500/5 hover:bg-red-500/10 w-full md:w-auto justify-center"
-          >
-            <span>Logout Session</span>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M19 12H9m10 0-3-3m3 3-3 3" />
-            </svg>
-          </button> */}
         </div>
       </header>
 
