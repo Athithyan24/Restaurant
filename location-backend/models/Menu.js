@@ -49,6 +49,12 @@ const MenuSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+
+  isAvailableForTable: {
+    type: Boolean,
+    default: true
+  },
+  
   createdAt: {
     type: Date,
     default: Date.now

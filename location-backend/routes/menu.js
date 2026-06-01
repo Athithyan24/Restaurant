@@ -99,4 +99,36 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   }
 });
 
-module.exports = router;
+// @route   PATCH /api/menu/:id/availability
+// @desc    Toggle whether a food item is available in the kitchen today
+// @access  Private (Admin / Kitchen)
+router.patch('/:id/table-availability', protect, async (req, res) => {
+  try {
+    const { isAvailableForTable } = req.body;
+
+    const updatedItem = await Menu.findByIdAndUpdate(
+      req.params.id,
+      { isAvailableForTable }, // Only updates the Table status, NOT the Web status!
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedItem) {
+      return res.status(404).json({ success: false, message: 'Menu item not found.' });
+    }
+
+    // ⚡ FIRE THE INDEPENDENT TABLE WEB-SOCKET EVENT ⚡
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('tableMenuAvailabilityChanged', { 
+        id: updatedItem._id, 
+        isAvailableForTable: updatedItem.isAvailableForTable 
+      });
+    }
+
+    res.status(200).json({ success: true, data: updatedItem });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+module.exports = router; 

@@ -31,7 +31,6 @@ const AboutBooking = () => {
     }
   };
 
-  // Continuous floating and pulsing keyframes for Left image stack
   const leftFloatKeyframes = {
     y: ["-50%", "-52%", "-48%", "-50%"], // subtle vertical drift relative to center
     rotate: [-3, -4, -2, -3], // slight rotation wobble

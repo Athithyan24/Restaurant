@@ -51,7 +51,8 @@ const Header = () => {
   const adminLinks = [
     { name: 'Dashboard', path: '/admin/dashboard' },
     { name: 'Live Bookings', path: '/admin/bookings' },
-    { name: 'Promotions', path: '/admin/offers' }
+    { name: 'Promotions', path: '/admin/offers' },
+    { name: 'Menu Management', path: '/admin/menuenabler' }
   ];
 
   // Assign links based on active session role
@@ -123,7 +124,7 @@ const Header = () => {
                     
                     {/* Animated Underline Indicator */}
                     <motion.div
-                      className={`absolute bottom-0 left-0 h-[2px] bg-[#FFB000] ${isActive ? 'w-full' : 'w-0 group-hover:w-full'} transition-all duration-300 ease-out`}
+                      className={`absolute bottom-0 left-0 h-0.5 bg-[#FFB000] ${isActive ? 'w-full' : 'w-0 group-hover:w-full'} transition-all duration-300 ease-out`}
                     />
                   </Link>
                 );

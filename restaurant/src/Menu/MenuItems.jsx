@@ -235,7 +235,7 @@ const MenuItems = () => {
                                 <div className="flex flex-col sm:flex-row gap-5">
                                   
                                   {/* Combo Main Image - Left side */}
-                                  <div className="w-full sm:w-[160px] md:w-[200px] aspect-[4/3] sm:aspect-auto rounded-xl overflow-hidden shrink-0 border border-white/5">
+                                  <div className="w-full sm:w-40 md:w-50 aspect-4/3 sm:aspect-auto rounded-xl overflow-hidden shrink-0 border border-white/5">
                                     <img src={item.image || "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=400&q=80"} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                                   </div>
 

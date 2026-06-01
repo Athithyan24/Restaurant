@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const categoryRoutes = require('./routes/category'); // Add to top
@@ -14,7 +16,25 @@ app.use(cors({
   credentials: true
 }));
 
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  }
+});
+
 app.use(express.json());
+
+app.set('io', io);
+
+io.on('connection' , (socket) => {
+  console.log(`Live connection established: ${socket.id}`);
+
+  socket.on('disconnect', () => {
+    console.log(`Connection disconnected: ${socket.id}`);
+  });
+});
 
 // Bind active route routing components
 app.use('/api/menu', menuRoutes);
@@ -35,3 +55,7 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('🛑 Critical database connection failure:', err.message);
     process.exit(1);
   });
+
+  server.listen(PORT, () => {
+  console.log(`Server & WebSockets running on port ${PORT}`);
+});

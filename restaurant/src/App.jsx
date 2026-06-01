@@ -22,9 +22,10 @@ import BookingPage from './Booking/BookingPage';
 import Login from './pages/Login'; // Adjust path based on your folder setup
 
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminMenuDesider from './pages/admin/AdminMenuDesider.jsx.jsx';
 
 // Temporary Operational Dashboards (Replace with your actual standalone files later)
-const KitchenTerminal = () => <div className="min-h-screen bg-[#060606] text-white p-20 font-serif text-3xl">Kitchen Live Order Matrix Queue</div>;
+import KitchenTerminal from './pages/kitchen/KitchenDashboard.jsx';
 const BillingTerminal = () => <div className="min-h-screen bg-[#060606] text-white p-20 font-serif text-3xl">Point of Sale & Invoicing Terminal</div>;
 const UnauthorizedPage = () => <div className="min-h-screen bg-[#060606] text-red-500 p-20 font-serif text-3xl text-center">403 - Clearance Denied for this Department</div>;
 
@@ -79,6 +80,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/bookings" element={<div className="p-20 text-white font-serif text-3xl">Live Bookings Console</div>} />
             <Route path="/admin/offers" element={<div className="p-20 text-white font-serif text-3xl">Promotions Console</div>} />
+            <Route path="/admin/menuenabler" element={<AdminMenuDesider />} />
           </Route>
           
           {/* Kitchen & Billing (No Header/Footer, pure isolated terminal logic) */}
