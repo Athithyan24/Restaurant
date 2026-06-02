@@ -50,9 +50,10 @@ const Header = () => {
 
   const adminLinks = [
     { name: 'Dashboard', path: '/admin/dashboard' },
-    { name: 'Live Bookings', path: '/admin/bookings' },
-    { name: 'Promotions', path: '/admin/offers' },
-    { name: 'Menu Management', path: '/admin/menuenabler' }
+    { name: 'Bookings', path: '/admin/bookings' },
+    { name: 'Offers', path: '/admin/offers' },
+    { name: 'Menu', path: '/admin/menuenabler' },
+    { name: 'QR Codes', path: '/admin/qrcodes' }
   ];
 
   // Assign links based on active session role

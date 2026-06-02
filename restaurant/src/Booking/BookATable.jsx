@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const BookATable = () => {
+  const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5000/api';
+
   const [formState, setFormState] = useState({
     date: '',
     time: '',
@@ -13,36 +15,121 @@ const BookATable = () => {
     specialRequests: '',
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false); // State for submission loading
+  
+  // NEW: State to hold bookings from the database AND live physical tables
+  const [existingBookings, setExistingBookings] = useState([]);
+  const [liveTables, setLiveTables] = useState([]);
 
-  // Available tables map inside the restaurant layout
-  const luxuryTables = [
-    { id: 'T-01', name: 'Table 01', type: 'Window View (2-4 Pax)', status: 'available' },
-    { id: 'T-02', name: 'Table 02', type: 'Window View (2 Pax)', status: 'available' },
-    { id: 'T-03', name: 'Table 03', type: 'VIP Alcove (2-4 Pax)', status: 'available' },
-    { id: 'T-04', name: 'Table 04', type: 'Private Booth (4-6 Pax)', status: 'available' },
-    { id: 'T-05', name: 'Table 05', type: 'Royal Lounge (6+ Pax)', status: 'available' },
-    { id: 'T-06', name: 'Table 06', type: 'Chef\'s Counter (2 Pax)', status: 'available' },
-    { id: 'T-07', name: 'Table 07', type: 'Courtyard Side (4 Pax)', status: 'available' },
-    { id: 'T-08', name: 'Table 08', type: 'Premium Center (2-4 Pax)', status: 'available' },
-  ];
+  // NEW: Fetch BOTH bookings and live table statuses on component mount
+  const fetchAvailability = async () => {
+    try {
+      const [bookingsRes, tablesRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/bookings`),
+        fetch(`${API_BASE_URL}/tables`)
+      ]);
+      
+      const bookingsJson = await bookingsRes.json();
+      const tablesJson = await tablesRes.json();
+      
+      if (bookingsJson.success) setExistingBookings(bookingsJson.data);
+      if (tablesJson.success) setLiveTables(tablesJson.data);
+    } catch (error) {
+      console.error("Failed to fetch availability:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchAvailability();
+  }, [API_BASE_URL]);
+
+  // UPDATED: Dynamically generate 15 tables to match AdminQRGenerator
+  const luxuryTables = Array.from({ length: 15 }, (_, i) => {
+    const num = i + 1;
+    const id = `T-${num.toString().padStart(2, '0')}`;
+    
+    let type = 'Standard Dining (2-4 Pax)';
+    if (num <= 4) type = 'Window View (2-4 Pax)';
+    else if (num <= 8) type = 'Premium Center (2-4 Pax)';
+    else if (num <= 12) type = 'Private Booth (4-6 Pax)';
+    else if (num === 13) type = 'VIP Alcove (2-4 Pax)';
+    else if (num === 14) type = 'Royal Lounge (6+ Pax)';
+    else if (num === 15) type = "Chef's Counter (2 Pax)";
+
+    return { id, name: `Table ${num.toString().padStart(2, '0')}`, type, status: 'available' };
+  });
+
+  // NEW: Helper function to check if a table is booked for the selected date OR physically occupied today
+  const isTableBooked = (tableId) => {
+    if (!formState.date) return false; // If no date selected, show all as available
+    
+    // 1. Check if reserved via the web (Booking Collection)
+    const isReserved = existingBookings.some(
+      (b) => b.tableNumber === tableId && b.date === formState.date && b.status !== 'Cancelled'
+    );
+
+    // 2. Check if physically occupied RIGHT NOW (Table Collection)
+    const getTodayDate = () => new Date().toISOString().split('T')[0];
+    const isToday = formState.date === getTodayDate();
+    
+    // Convert 'T-05' to the number 5 to match your Table database schema safely
+    const rawTableNumber = parseInt(tableId.split('-')[1], 10); 
+    
+    const isPhysicallyOccupied = isToday && liveTables.some(
+      (t) => Number(t.tableNumber) === rawTableNumber && t.status === 'Occupied'
+    );
+
+    return isReserved || isPhysicallyOccupied;
+  };
 
   const handleChange = (e) => {
-    setFormState({ ...formState, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // UPDATED: If date changes, clear the table selection to prevent booking a taken table
+    if (name === 'date') {
+      setFormState({ ...formState, [name]: value, tableNumber: '' });
+    } else {
+      setFormState({ ...formState, [name]: value });
+    }
   };
 
   const handleTableSelect = (tableId) => {
+    // UPDATED: Prevent selecting if it's already booked
+    if (isTableBooked(tableId)) return;
     setFormState({ ...formState, tableNumber: tableId });
   };
 
-  const handleSubmit = (e) => {
+  // --- CONNECTED BACKEND SUBMIT LOGIC ---
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formState.tableNumber) {
       alert("Please select a table number to complete your reservation.");
       return;
     }
-    setTimeout(() => {
-      setIsSubmitted(true);
-    }, 500);
+
+    setIsSubmitting(true); // Start loading animation
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formState),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsSubmitted(true); // Show success screen
+        // Fetch bookings & tables again here to update the state immediately
+        fetchAvailability();
+      } else {
+        alert("Reservation failed: " + result.message);
+      }
+    } catch (error) {
+      console.error("Booking Error:", error);
+      alert("Network error. Please try again later.");
+    } finally {
+      setIsSubmitting(false); // Stop loading animation
+    }
   };
 
   const containerVariants = {
@@ -167,24 +254,28 @@ const BookATable = () => {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
                     {luxuryTables.map((table) => {
                       const isSelected = formState.tableNumber === table.id;
+                      const booked = isTableBooked(table.id); // Check booking status
+
                       return (
                         <div
                           key={table.id}
                           onClick={() => handleTableSelect(table.id)}
                           className={`cursor-pointer border p-4 rounded-xl flex flex-col justify-between transition-all duration-300 h-28 ${
-                            isSelected 
-                              ? 'border-[#FFB000] bg-[#FFB000]/10 shadow-[0_0_15px_rgba(255,176,0,0.15)]' 
-                              : 'border-white/5 bg-black/20 hover:border-white/20 hover:bg-black/40'
+                            booked 
+                              ? 'border-red-500/30 bg-red-500/5 opacity-50 grayscale cursor-not-allowed' // Preserved your structure, just added booked classes
+                              : isSelected 
+                                ? 'border-[#FFB000] bg-[#FFB000]/10 shadow-[0_0_15px_rgba(255,176,0,0.15)]' 
+                                : 'border-white/5 bg-black/20 hover:border-white/20 hover:bg-black/40'
                           }`}
                         >
                           <div className="flex justify-between items-start">
-                            <span className={`text-xs font-mono font-bold uppercase tracking-wider ${isSelected ? 'text-[#FFB000]' : 'text-gray-400'}`}>
+                            <span className={`text-xs font-mono font-bold uppercase tracking-wider ${isSelected ? 'text-[#FFB000]' : booked ? 'text-red-500' : 'text-gray-400'}`}>
                               {table.id}
                             </span>
-                            <div className={`w-2 h-2 rounded-full ${isSelected ? 'bg-[#FFB000] animate-pulse' : 'bg-green-500'}`} />
+                            <div className={`w-2 h-2 rounded-full ${booked ? 'bg-red-500' : isSelected ? 'bg-[#FFB000] animate-pulse' : 'bg-green-500'}`} />
                           </div>
                           <div>
-                            <h4 className="text-sm font-serif font-medium text-white">{table.name}</h4>
+                            <h4 className="text-sm font-serif font-medium text-white">{booked ? 'Reserved' : table.name}</h4>
                             <p className="text-[10px] text-gray-500 font-light truncate">{table.type}</p>
                           </div>
                         </div>
@@ -258,15 +349,20 @@ const BookATable = () => {
                   </div>
                 </div>
 
-                {/* SUBMIT BUTTON */}
+                {/* --- UPDATED SUBMIT BUTTON --- */}
                 <div className="pt-4">
                   <motion.button
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
+                    whileHover={{ scale: isSubmitting ? 1 : 1.01 }}
+                    whileTap={{ scale: isSubmitting ? 1 : 0.99 }}
                     type="submit"
-                    className="w-full bg-[#FFB000] text-black py-4 rounded-xl font-bold text-xs tracking-[0.25em] uppercase hover:bg-white transition-colors duration-300 shadow-[0_4px_25px_rgba(255,176,0,0.15)]"
+                    disabled={isSubmitting}
+                    className={`w-full py-4 rounded-xl font-bold text-xs tracking-[0.25em] uppercase transition-all duration-300 shadow-[0_4px_25px_rgba(255,176,0,0.15)] ${
+                      isSubmitting 
+                        ? 'bg-[#FFB000]/50 text-black/50 cursor-not-allowed' 
+                        : 'bg-[#FFB000] text-black hover:bg-white'
+                    }`}
                   >
-                    Confirm Luxury Reservation
+                    {isSubmitting ? 'Processing Transmission...' : 'Confirm Luxury Reservation'}
                   </motion.button>
                   <p className="text-center text-[10px] text-gray-500 tracking-wider mt-4">
                     By confirmation, you agree to our smart casual dress code alignment.
@@ -309,7 +405,6 @@ const BookATable = () => {
             )}
           </AnimatePresence>
         </motion.div>
-
       </motion.div>
     </div>
   );

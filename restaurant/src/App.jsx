@@ -18,13 +18,17 @@ import BlogsPage from './Blogs/BlogsPage';
 import ContactUsPage from './ContactusComponents/ContactUsPage';
 import BookingPage from './Booking/BookingPage';
 
+// NEW: Dine-in Table Menu (QR Code)
+import TableMenu from './pages/tables/TableMenu'; 
+
 // Operational Portal Authentication Page
-import Login from './pages/Login'; // Adjust path based on your folder setup
+import Login from './pages/Login'; 
 
 import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminMenuDesider from './pages/admin/AdminMenuDesider.jsx.jsx';
+import AdminMenuDesider from './pages/admin/AdminMenuDesider'; // Fixed double .jsx typo
+import AdminQRGenerator from './pages/admin/AdminQRGenerator';
 
-// Temporary Operational Dashboards (Replace with your actual standalone files later)
+// Temporary Operational Dashboards
 import KitchenTerminal from './pages/kitchen/KitchenDashboard.jsx';
 const BillingTerminal = () => <div className="min-h-screen bg-[#060606] text-white p-20 font-serif text-3xl">Point of Sale & Invoicing Terminal</div>;
 const UnauthorizedPage = () => <div className="min-h-screen bg-[#060606] text-red-500 p-20 font-serif text-3xl text-center">403 - Clearance Denied for this Department</div>;
@@ -69,11 +73,14 @@ function App() {
             <Route path="/reserve" element={<BookingPage />} />
           </Route>
 
-          {/* 2. AUTHENTICATION HUB (Isolated Framework Layout) */}
+          {/* 2. DEDICATED TABLE MENU (Isolated - No Header/Footer) */}
+          <Route path="/table/:tableId" element={<TableMenu />} />
+
+          {/* 3. AUTHENTICATION HUB (Isolated Framework Layout) */}
           <Route path="/login" element={<Login />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-          {/* 3. PROTECTED ENTERPRISE OPERATIONS SEGMENTS */}
+          {/* 4. PROTECTED ENTERPRISE OPERATIONS SEGMENTS */}
           
           {/* Admin Panel Routes Wrapped in AdminLayout */}
           <Route element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
@@ -81,6 +88,7 @@ function App() {
             <Route path="/admin/bookings" element={<div className="p-20 text-white font-serif text-3xl">Live Bookings Console</div>} />
             <Route path="/admin/offers" element={<div className="p-20 text-white font-serif text-3xl">Promotions Console</div>} />
             <Route path="/admin/menuenabler" element={<AdminMenuDesider />} />
+            <Route path="/admin/qrcodes" element={<AdminQRGenerator />} />
           </Route>
           
           {/* Kitchen & Billing (No Header/Footer, pure isolated terminal logic) */}
