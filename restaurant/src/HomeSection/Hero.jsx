@@ -1,8 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
+const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5000/api';
+
 const Hero = () => {
+  const [offers, setOffers] = useState([]);
+
+  const defaultOffers = [
+    { name: 'Main Course', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=500&auto=format&fit=crop', icon: '🍲' },
+    { name: 'Desserts', img: 'https://images.unsplash.com/photo-1599749001441-5f2c23e3bbe0?w=500&auto=format&fit=crop&q=60', icon: '🍰' },
+    { name: 'Appetizer', img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=500&auto=format&fit=crop', icon: '🥗' },
+    { name: 'Starter', img: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=500&auto=format&fit=crop', icon: '🥐' },
+  ];
+
+  useEffect(() => {
+    fetchActiveOffers();
+  }, []);
+
+  const fetchActiveOffers = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/offers`);
+      if (!res.ok) throw new Error("Backend failing");
+      const json = await res.json();
+      if (json.success && json.data && json.data.length === 4) {
+        setOffers(json.data);
+      } else {
+        setOffers(defaultOffers);
+      }
+    } catch (error) {
+      setOffers(defaultOffers);
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -20,29 +50,6 @@ const Hero = () => {
     },
   };
 
-  const categories = [
-    { 
-      name: 'Main Course', 
-      img: 'https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=500&auto=format&fit=crop', 
-      icon: '🍲' 
-    },
-    { 
-      name: 'Desserts', 
-      img: 'https://images.unsplash.com/photo-1599749001441-5f2c23e3bbe0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fGRlc2VydHMlMjBmb29kfGVufDB8fDB8fHww', 
-      icon: '🍰' 
-    },
-    { 
-      name: 'Appetizer', 
-      img: 'https://images.unsplash.com/photo-1541529086526-db283c563270?q=80&w=500&auto=format&fit=crop', 
-      icon: '🥗' 
-    },
-    { 
-      name: 'Starter', 
-      img: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?q=80&w=500&auto=format&fit=crop', 
-      icon: '🥐' 
-    },
-  ];
-
   return (
     <section className="relative min-h-screen bg-black text-white pt-32 pb-32 overflow-hidden flex flex-col items-center justify-center">
       
@@ -50,10 +57,13 @@ const Hero = () => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-200 bg-yellow-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       <motion.div 
+        // Force re-render when data is ready so animation triggers on refresh
+        key={offers.length} 
         className="relative z-10 w-full max-w-7xl mx-auto px-4 flex flex-col items-center text-center"
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
+        // viewport once: false allows the animation to repeat every time it enters the screen
         viewport={{ once: false, amount: 0.1 }}
       >
         <motion.p 
@@ -80,7 +90,7 @@ const Hero = () => {
         {/* CTA Area */}
         <motion.div 
           variants={itemVariants}
-          className="flex flex-col sm:flex-row items-center gap-6 mb-32"
+          className="flex flex-col sm:flex-row items-center gap-6 mb-24 md:mb-32"
         >
           <motion.button
             whileHover={{ scale: 1.05, boxShadow: "0px 0px 25px rgba(234, 179, 8, 0.4)" }}
@@ -90,7 +100,6 @@ const Hero = () => {
             <Link to="/reserve">Book a table</Link>
           </motion.button>
 
-          {/* Star Rating */}
           <div className="flex items-center gap-3">
             <span className="font-serif font-medium text-gray-300">(4.9/5)</span>
             <div className="flex text-yellow-500 gap-1">
@@ -103,48 +112,51 @@ const Hero = () => {
           </div>
         </motion.div>
 
+        {/* DYNAMIC DISH MATRIX */}
         <motion.div 
           variants={containerVariants}
-          className="flex flex-row justify-center items-center gap-4 md:gap-8 lg:gap-12"
+          // pt-16/pb-16 prevents top images from being cut off. flex-wrap removes scroll.
+          className="flex flex-row flex-wrap justify-center items-center gap-6 md:gap-8 lg:gap-12 w-full pt-16 pb-16"
         >
-          {categories.map((item, index) => {
+          {offers.map((item, index) => {
             const isDown = index % 2 === 0;
 
             return (
-              <React.Fragment key={item.name}>
+              <React.Fragment key={item._id || item.name + index}>
                 <motion.div 
                   variants={itemVariants}
-                  className={`flex flex-col items-center group cursor-pointer transition-transform duration-500 ${
+                  className={`flex flex-col items-center group cursor-pointer transition-transform duration-500 shrink-0 ${
                     isDown ? 'translate-y-8 md:translate-y-12' : '-translate-y-8 md:-translate-y-12'
                   }`}
                 >
                   <motion.div 
                     whileHover={{ scale: 1.05 }}
-                    className="relative w-32 h-48 md:w-48 md:h-72 rounded-[100px] p-1 border border-white/10 group-hover:border-yellow-500/50 transition-colors duration-500"
+                    className="relative w-32 h-48 md:w-48 md:h-72 rounded-[100px] p-1 border border-white/10 group-hover:border-yellow-500/50 transition-colors duration-500 bg-neutral-900"
                   >
                     <div className="w-full h-full rounded-[100px] overflow-hidden relative">
                       <img 
                         src={item.img} 
                         alt={item.name} 
                         className="w-full h-full object-cover"
+                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500'; }}
                       />
                       <div className="absolute inset-0 bg-black/30 group-hover:bg-transparent transition-colors duration-500" />
                     </div>
 
                     <div className="absolute -top-3 -right-3 bg-white text-black w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-lg shadow-lg z-10 border-4 border-black">
-                      {item.icon}
+                      {item.icon || '✨'}
                     </div>
                   </motion.div>
 
-                  <p className="mt-6 text-gray-300 font-serif font-medium group-hover:text-yellow-500 transition-colors text-sm md:text-base">
+                  <p className="mt-6 text-gray-300 font-serif font-medium group-hover:text-yellow-500 transition-colors text-sm md:text-base tracking-wide max-w-[140px] text-center truncate">
                     {item.name}
                   </p>
                 </motion.div>
 
-                {index < categories.length - 1 && (
+                {index < offers.length - 1 && (
                   <motion.div 
                     variants={itemVariants}
-                    className="w-1.5 h-1.5 rounded-full bg-yellow-500/50 shrink-0"
+                    className="w-1.5 h-1.5 rounded-full bg-yellow-500/50 shrink-0 hidden lg:block"
                   />
                 )}
               </React.Fragment>

@@ -6,6 +6,12 @@ const OrderSchema = new mongoose.Schema({
     ref: 'Table',
     required: true
   },
+  // ✅ FIX: Added status to the MAIN order level so the button works!
+  status: { 
+    type: String, 
+    enum: ['Pending', 'Preparing', 'Ready', 'Served'], 
+    default: 'Pending' 
+  },
   items: [{
     menuItem: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu' },
     quantity: { type: Number, default: 1 },

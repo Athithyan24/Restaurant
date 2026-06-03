@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { io } from 'socket.io-client'; // ADDED: Socket.io for live updates
 
 const BookATable = () => {
   const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5000/api';
+  const SOCKET_URL = API_BASE_URL.replace('/api', ''); // ADDED: Socket URL
 
   const [formState, setFormState] = useState({
     date: '',
@@ -41,6 +43,26 @@ const BookATable = () => {
 
   useEffect(() => {
     fetchAvailability();
+
+    // ADDED: Listen for live table status changes (e.g., when someone scans a QR code and orders)
+    const socket = io(SOCKET_URL);
+    
+    socket.on('tableStatusChanged', (data) => {
+      setLiveTables(prev => {
+        // Ensure tableNumber is treated as a Number for comparison
+        const incomingNum = Number(data.tableNumber);
+        const exists = prev.some(t => Number(t.tableNumber) === incomingNum);
+        
+        if (exists) {
+          return prev.map(t => 
+            Number(t.tableNumber) === incomingNum ? { ...t, status: data.status } : t
+          );
+        }
+        return [...prev, { tableNumber: incomingNum, status: data.status }];
+      });
+    });
+
+    return () => socket.disconnect();
   }, [API_BASE_URL]);
 
   // UPDATED: Dynamically generate 15 tables to match AdminQRGenerator
@@ -59,33 +81,50 @@ const BookATable = () => {
     return { id, name: `Table ${num.toString().padStart(2, '0')}`, type, status: 'available' };
   });
 
-  // NEW: Helper function to check if a table is booked for the selected date OR physically occupied today
+  // --- SMART TIMING LOGIC INTEGRATED HERE ---
   const isTableBooked = (tableId) => {
-    if (!formState.date) return false; // If no date selected, show all as available
+    // Require both date and time to accurately check the 2-hour window
+    if (!formState.date || !formState.time) return false;
     
-    // 1. Check if reserved via the web (Booking Collection)
-    const isReserved = existingBookings.some(
-      (b) => b.tableNumber === tableId && b.date === formState.date && b.status !== 'Cancelled'
-    );
+    // 1. Reservation Time-Window Check (2 Hours) - Web Bookings
+    const isReserved = existingBookings.some((b) => {
+      if (b.tableNumber !== tableId || b.date !== formState.date || b.status === 'Cancelled') return false;
+      
+      const formTime = new Date(`1970-01-01T${formState.time}`);
+      const bookedTime = new Date(`1970-01-01T${b.time}`);
+      const diffHours = Math.abs(formTime - bookedTime) / 36e5;
+      
+      return diffHours < 2; // Block if within 2 hours of another booking
+    });
 
-    // 2. Check if physically occupied RIGHT NOW (Table Collection)
+    // 2. Physical Occupancy Check (Only if booking within 2 hours of RIGHT NOW)
     const getTodayDate = () => new Date().toISOString().split('T')[0];
     const isToday = formState.date === getTodayDate();
     
     // Convert 'T-05' to the number 5 to match your Table database schema safely
     const rawTableNumber = parseInt(tableId.split('-')[1], 10); 
     
-    const isPhysicallyOccupied = isToday && liveTables.some(
-      (t) => Number(t.tableNumber) === rawTableNumber && t.status === 'Occupied'
-    );
+    let isPhysicallyOccupied = false;
+    if (isToday) {
+       const now = new Date();
+       const formTime = new Date(`${formState.date}T${formState.time}`);
+       const diffHours = (formTime - now) / 36e5;
+       
+       // Only block a physical table if they are trying to book it within the next 2 hours
+       if (diffHours >= -1 && diffHours <= 2) {
+         isPhysicallyOccupied = liveTables.some(
+           (t) => Number(t.tableNumber) === rawTableNumber && t.status === 'Occupied'
+         );
+       }
+    }
 
     return isReserved || isPhysicallyOccupied;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // UPDATED: If date changes, clear the table selection to prevent booking a taken table
-    if (name === 'date') {
+    // UPDATED: If date OR time changes, clear the table selection to prevent booking a taken table
+    if (name === 'date' || name === 'time') {
       setFormState({ ...formState, [name]: value, tableNumber: '' });
     } else {
       setFormState({ ...formState, [name]: value });

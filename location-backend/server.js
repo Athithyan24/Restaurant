@@ -46,6 +46,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/tables', tableRoutes);
+app.use('/api/offers', require('./routes/offers'));
 // Health check status terminal probe
 app.get('/health', (req, res) => res.status(200).json({ status: 'online', time: new Date() }));
 

@@ -3,11 +3,13 @@ const router = express.Router();
 const Order = require('../models/Order');
 const Table = require('../models/Table');
 
+// --- 1. CREATE NEW ORDER ---
 router.post('/', async (req, res) => {
   try {
     const { tableNumber, items } = req.body;
-
-    // 1. Look for the table
+    const io = req.app.get('io');
+    
+    // Look for the table
     let table = await Table.findOne({ tableNumber: Number(tableNumber) });
     
     if (!table) {
@@ -19,20 +21,22 @@ router.post('/', async (req, res) => {
         currentPartySize: 2
       });
     } else {
-      // ✅ THE CRITICAL FIX: Even if table exists, force it to 'Occupied' 
-      // so the Booking UI knows someone is sitting there.
       table.status = 'Occupied';
       await table.save();
     }
 
-    // 3. Create the Order
+    if (io) {
+      io.emit('tableStatusChanged', { 
+        tableNumber: Number(tableNumber), 
+        status: 'Occupied' 
+      });
+    }
+
     const newOrder = await Order.create({
       table: table._id,
-      items: items // { menuItem, quantity }
+      items: items
     });
 
-    // 4. Fetch the full dish details to show the kitchen
-    const io = req.app.get('io');
     if (io) {
       const populatedOrder = await Order.findById(newOrder._id)
                             .populate('table')
@@ -51,6 +55,7 @@ router.post('/', async (req, res) => {
   }
 });
 
+// --- 2. UPDATE ORDER STATUS (Kitchen) ---
 router.patch('/:id/status', async (req, res) => {
   try {
     const { status } = req.body; 
@@ -75,13 +80,51 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
+// --- 3. GET ACTIVE ORDERS ---
 router.get('/active', async (req, res) => {
   try {
     const orders = await Order.find({ paymentStatus: 'Unpaid' })
       .populate('table')
-      .populate('items.menuItem')
-      .sort({ createdAt: 1 }); 
+      .populate('items.menuItem') // This is critical for prices/names
+      .sort({ createdAt: -1 });
     res.json({ success: true, data: orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// --- 4. NEW: CHECKOUT ROUTE (Cashier) ---
+router.patch('/:id/checkout', async (req, res) => {
+  try {
+    // 1. Mark order as paid
+    const order = await Order.findByIdAndUpdate(
+      req.params.id, 
+      { paymentStatus: 'Paid' }, 
+      { new: true }
+    ).populate('table');
+
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    // 2. Free up the table automatically
+    if (order.table) {
+      await Table.findByIdAndUpdate(order.table._id, { 
+        status: 'Available',
+        currentPartySize: 0 
+      });
+
+      const io = req.app.get('io');
+      if (io) {
+        // Tell everyone the table is now green/available
+        io.emit('tableStatusChanged', { 
+          tableNumber: order.table.tableNumber, 
+          status: 'Available' 
+        });
+        // Tell the dashboard to remove this order from the Billing tab
+        io.emit('orderStatusUpdated', order); 
+      }
+    }
+
+    res.json({ success: true, order });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

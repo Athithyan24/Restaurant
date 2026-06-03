@@ -25,12 +25,14 @@ import TableMenu from './pages/tables/TableMenu';
 import Login from './pages/Login'; 
 
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminOfferEditor from './pages/admin/AdminOfferEditor.jsx'; // Fixed export name and path
+import AdminTableReservation from './pages/admin/AdminTableReservation.jsx';
 import AdminMenuDesider from './pages/admin/AdminMenuDesider'; // Fixed double .jsx typo
 import AdminQRGenerator from './pages/admin/AdminQRGenerator';
 
 // Temporary Operational Dashboards
 import KitchenTerminal from './pages/kitchen/KitchenDashboard.jsx';
-const BillingTerminal = () => <div className="min-h-screen bg-[#060606] text-white p-20 font-serif text-3xl">Point of Sale & Invoicing Terminal</div>;
+import BillingTerminal from './pages/billing/BillingDashboard.jsx';
 const UnauthorizedPage = () => <div className="min-h-screen bg-[#060606] text-red-500 p-20 font-serif text-3xl text-center">403 - Clearance Denied for this Department</div>;
 
 // Layout Wrapper to confine Header & Footer strictly to customer pathways
@@ -85,8 +87,8 @@ function App() {
           {/* Admin Panel Routes Wrapped in AdminLayout */}
           <Route element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/bookings" element={<div className="p-20 text-white font-serif text-3xl">Live Bookings Console</div>} />
-            <Route path="/admin/offers" element={<div className="p-20 text-white font-serif text-3xl">Promotions Console</div>} />
+            <Route path="/admin/bookings" element={<AdminTableReservation />} />
+            <Route path="/admin/offers" element={<AdminOfferEditor />} />
             <Route path="/admin/menuenabler" element={<AdminMenuDesider />} />
             <Route path="/admin/qrcodes" element={<AdminQRGenerator />} />
           </Route>
