@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import React, {useEffect} from 'react';
+import { BrowserRouter, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 
 // Global Authentication Providers & Gateways
 import { AuthProvider } from './context/AuthContext';
@@ -35,7 +35,15 @@ import KitchenTerminal from './pages/kitchen/KitchenDashboard.jsx';
 import BillingTerminal from './pages/billing/BillingDashboard.jsx';
 const UnauthorizedPage = () => <div className="min-h-screen bg-[#060606] text-red-500 p-20 font-serif text-3xl text-center">403 - Clearance Denied for this Department</div>;
 
-// Layout Wrapper to confine Header & Footer strictly to customer pathways
+const ScrollToTop = () => {
+  const {pathname} =useLocation();
+
+  useEffect(()=>{
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
+
 const CustomerLayout = () => {
   return (
     <>
@@ -62,6 +70,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+      <ScrollToTop/>
         <Routes>
           
           {/* 1. PUBLIC CUSTOMER-FACING CHANNELS (With Header & Footer) */}
