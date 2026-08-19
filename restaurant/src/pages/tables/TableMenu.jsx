@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
-import { ShoppingBag, ChevronRight, Minus, Plus, Layers } from 'lucide-react';
+import { ShoppingBag, ChevronRight, Minus, Plus, Layers, Sparkles } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:5000/api';
@@ -128,10 +128,9 @@ const TableMenu = () => {
   return (
     <div className="min-h-screen bg-[#000000] text-neutral-200 font-sans flex flex-col md:flex-row selection:bg-neutral-800 pb-32 md:pb-0">
       
-      {/* LEFT SIDEBAR: EXPERT BRANDING & CATEGORY MATRIX */}
+      {/* LEFT SIDEBAR */}
       <aside className="w-full md:w-80 shrink-0 md:sticky md:top-0 md:h-screen bg-[#050505] border-b md:border-b-0 md:border-r border-neutral-900 p-6 md:p-10 flex flex-col justify-between z-50">
         <div>
-          {/* Curated Header Block */}
           <div className="border-b border-neutral-900 pb-6 mb-8">
             <h1 className="text-xl font-light tracking-[0.25em] text-white font-serif uppercase">
               THE LOCATION
@@ -141,7 +140,6 @@ const TableMenu = () => {
             </p>
           </div>
 
-          {/* Left Positioned Menu Navigation */}
           <div className="space-y-1.5 flex flex-row md:flex-col overflow-x-auto no-scrollbar md:overflow-x-visible pb-4 md:pb-0 gap-3 md:gap-0">
             {categories.map(cat => (
               <button
@@ -159,14 +157,13 @@ const TableMenu = () => {
           </div>
         </div>
 
-        {/* Dynamic Static Info Footer for Table */}
         <div className="hidden md:block border-t border-neutral-900 pt-6 font-mono text-[9px] text-neutral-600 tracking-wider uppercase">
           <p>Interactive Guest Node</p>
           <p className="mt-1 text-neutral-700">Secured Digital Pipeline Active</p>
         </div>
       </aside>
 
-      {/* RIGHT CONTENT WORKSPACE: ULTRA HIGH-END 3-COLUMN MESH GRID */}
+      {/* RIGHT CONTENT WORKSPACE */}
       <main className="flex-1 p-6 md:p-12 overflow-y-auto max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-3 mb-8 text-neutral-500 font-mono text-xs uppercase tracking-widest border-b border-neutral-900 pb-4">
           <Layers size={14} className="text-neutral-700" />
@@ -183,6 +180,7 @@ const TableMenu = () => {
             {filteredItems.map((item) => {
               const isSoldOut = item.isAvailableForTable === false;
               const quantity = getQuantity(item._id);
+              const isCombo = item.isCombo === true; 
               
               return (
                 <motion.div
@@ -191,21 +189,35 @@ const TableMenu = () => {
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.98 }}
-                  className={`bg-[#080808] border rounded-xl overflow-hidden flex flex-col justify-between group transition-all duration-500 ${
-                    isSoldOut 
-                      ? 'border-neutral-950 opacity-30 grayscale' 
-                      : 'border-neutral-900 hover:border-neutral-700 shadow-sm'
+                  // ⚡ DYNAMIC GRID SIZING: Combos span multiple columns!
+                  className={`bg-[#080808] border rounded-xl overflow-hidden group transition-all duration-500 relative ${
+                    isSoldOut ? 'opacity-30 grayscale' : ''
+                  } ${
+                    isCombo 
+                      ? 'col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col lg:flex-row border-[#FFB000]/40 shadow-[0_0_20px_rgba(255,176,0,0.06)] hover:border-[#FFB000]/70'
+                      : 'col-span-1 flex flex-col border-neutral-900 hover:border-neutral-700 shadow-sm'
                   }`}
                 >
-                  {/* Dramatic Aspect-Square Image Container */}
-                  <div className="relative aspect-square overflow-hidden bg-neutral-950 border-b border-neutral-900/50">
+                  {/* Image Container - Adjusts width based on if it's a combo */}
+                  <div className={`relative overflow-hidden bg-neutral-950 shrink-0 ${
+                    isCombo 
+                      ? 'w-full lg:w-[40%] aspect-[16/10] lg:aspect-auto lg:border-r border-b lg:border-b-0 border-neutral-900/50' 
+                      : 'aspect-square border-b border-neutral-900/50'
+                  }`}>
                     <img 
-                      src={item.image} 
+                      src={item.image || "https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=500"} 
                       alt={item.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
+                    
+                    {isCombo && (
+                      <div className="absolute top-4 left-4 bg-[#FFB000] text-black text-[10px] font-mono font-bold uppercase tracking-widest px-3 py-1.5 rounded flex items-center gap-2 shadow-lg z-10">
+                        <Sparkles size={12} /> Chef's Signature Combo
+                      </div>
+                    )}
+
                     {isSoldOut && (
-                      <div className="absolute inset-0 bg-black/75 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/75 flex items-center justify-center z-20">
                         <span className="text-[10px] font-mono tracking-[0.2em] border border-neutral-800 bg-[#020202] text-neutral-400 px-3 py-1.5 rounded uppercase">
                           Exhausted Allocation
                         </span>
@@ -213,37 +225,70 @@ const TableMenu = () => {
                     )}
                   </div>
 
-                  {/* Highly Visible Component Information */}
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                  {/* Information & Actions Container */}
+                  <div className={`p-5 flex-1 flex flex-col justify-between space-y-4 ${isCombo ? 'lg:p-8' : ''}`}>
                     <div>
                       <div className="flex justify-between items-start gap-3">
-                        <h3 className="text-lg font-serif font-light text-white group-hover:text-[#FFB000] transition-colors leading-snug">
+                        <h3 className={`font-serif font-light leading-snug transition-colors ${
+                          isCombo ? 'text-xl lg:text-2xl text-[#FFB000]' : 'text-lg text-white group-hover:text-[#FFB000]'
+                        }`}>
                           {item.name}
                         </h3>
-                        <span className="text-lg font-mono text-[#FFB000] font-medium shrink-0">
+                        <span className={`font-mono font-medium shrink-0 ${isCombo ? 'text-xl text-white' : 'text-lg text-[#FFB000]'}`}>
                           ₹{item.price}
                         </span>
                       </div>
-                      <p className="text-xs text-neutral-400 font-light leading-relaxed mt-2.5">
+                      <p className={`text-neutral-400 font-light leading-relaxed mt-2.5 ${isCombo ? 'text-sm' : 'text-xs'}`}>
                         {item.description}
                       </p>
+
+                      {/* ⚡ NEW: VISUAL MINI-GALLERY FOR COMBO SUB-ITEMS */}
+                      {isCombo && item.comboItems && item.comboItems.length > 0 && (
+                        <div className="mt-6 pt-5 border-t border-neutral-800/60">
+                          <p className="text-[10px] text-[#FFB000]/80 uppercase tracking-widest font-mono mb-4 flex items-center gap-1.5">
+                            <Layers size={12} /> Included in Configuration
+                          </p>
+                          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide no-scrollbar snap-x">
+                            {item.comboItems.map((cItem, idx) => (
+                              <div key={idx} className="flex flex-col gap-2 shrink-0 w-24 snap-start">
+                                <div className="w-24 h-24 rounded-lg overflow-hidden border border-neutral-800 bg-neutral-900/50">
+                                  <img 
+                                    src={cItem.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200'} 
+                                    alt={cItem.name} 
+                                    className="w-full h-full object-cover opacity-75 group-hover:opacity-100 transition-opacity duration-300"
+                                  />
+                                </div>
+                                <span className="text-[10px] text-neutral-300 font-mono text-center leading-tight line-clamp-2">
+                                  {cItem.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Highly Disciplined Operational Order Interfaces */}
-                    <div className="pt-2">
+                    {/* Add to Cart Actions */}
+                    <div className={`pt-2 ${isCombo ? 'mt-auto lg:w-1/2 lg:self-end' : ''}`}>
                       {!isSoldOut && (
                         quantity === 0 ? (
                           <button 
                             onClick={() => addToCart(item)}
-                            className="w-full py-2.5 bg-neutral-950 hover:bg-neutral-900 text-neutral-300 hover:text-white border border-neutral-900 rounded-lg text-[10px] font-mono uppercase tracking-widest transition-all duration-150 flex items-center justify-center gap-1.5"
+                            className={`w-full py-2.5 border rounded-lg text-[10px] font-mono uppercase tracking-widest transition-all duration-150 flex items-center justify-center gap-1.5 ${
+                              isCombo 
+                                ? 'bg-[#FFB000] border-[#FFB000] text-black hover:bg-white hover:border-white shadow-[0_0_15px_rgba(255,176,0,0.3)]' 
+                                : 'bg-neutral-950 border-neutral-900 text-neutral-300 hover:text-white hover:bg-neutral-900'
+                            }`}
                           >
-                            Add To Order <Plus size={12} className="text-neutral-500" />
+                            Add To Order <Plus size={12} />
                           </button>
                         ) : (
-                          <div className="flex items-center justify-between bg-neutral-950 border border-neutral-800 rounded-lg p-1">
+                          <div className={`flex items-center justify-between border rounded-lg p-1 ${
+                            isCombo ? 'bg-neutral-900 border-[#FFB000]/50' : 'bg-neutral-950 border-neutral-800'
+                          }`}>
                             <button 
                               onClick={() => removeFromCart(item._id)} 
-                              className="p-2 text-neutral-500 hover:text-neutral-200 transition-colors"
+                              className={`p-2 transition-colors ${isCombo ? 'text-[#FFB000] hover:text-white' : 'text-neutral-500 hover:text-neutral-200'}`}
                             >
                               <Minus size={12} />
                             </button>
@@ -252,7 +297,7 @@ const TableMenu = () => {
                             </span>
                             <button 
                               onClick={() => addToCart(item)} 
-                              className="p-2 text-neutral-500 hover:text-neutral-200 transition-colors"
+                              className={`p-2 transition-colors ${isCombo ? 'text-[#FFB000] hover:text-white' : 'text-neutral-500 hover:text-neutral-200'}`}
                             >
                               <Plus size={12} />
                             </button>
@@ -268,7 +313,7 @@ const TableMenu = () => {
         </AnimatePresence>
       </main>
 
-      {/* IMMERSIVE ORDER DISPATCH CONSOLE BAR */}
+      {/* BOTTOM ORDER BAR */}
       <AnimatePresence>
         {cartItemCount > 0 && (
           <motion.div 
